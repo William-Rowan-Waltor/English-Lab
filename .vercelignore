@@ -7,9 +7,9 @@ venv/**
 markitdown-venv
 markitdown-venv/**
 **/markitdown-venv/**
-speaking-backend/.venv
-speaking-backend/.venv/**
-**/speaking-backend/.venv/**
+speaking-backend
+speaking-backend/**
+**/speaking-backend/**
 local-ai
 local-ai/**
 node_modules
@@ -24,6 +24,8 @@ graphify-out/**
 .claude/**
 *.log
 *.err
+*.bat
+*.ps1
 data/*.backup*.json
 data/*.from-edge*.json
 data/*.tmp*

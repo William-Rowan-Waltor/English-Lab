@@ -7283,3 +7283,19 @@ Fix Implemented:
    - Updated GitHub fallback repository to William-Rowan-Waltor/English-Lab.
 5. Pushed commit 1e12aa1 to https://github.com/William-Rowan-Waltor/English-Lab.git.
 ================================================================
+================================================================
+SESSION: VERCEL PYTHON MONOREPO WORKING DIRECTORY FIX
+User Request: 'Vercel build log: Cannot find module /vercel/path0/speaking-backend/scripts/build.mjs'
+Status: FIXED & PUSHED TO MAIN
+
+Root Cause:
+Vercel CLI automatically detected speaking-backend/requirements.txt and treated speaking-backend as a Python project service, executing the build command (node scripts/build.mjs) from inside /vercel/path0/speaking-backend instead of repository root /vercel/path0.
+
+Fix Implemented:
+1. Updated .vercelignore:
+   - Added 'speaking-backend', 'speaking-backend/**', and '**/speaking-backend/**' so Vercel completely ignores the local Python Whisper backend during cloud deployment, preventing Vercel from switching working directory or installing unneeded Python dependencies.
+   - Added *.bat and *.ps1 to avoid processing Windows automation scripts.
+2. Defense-in-depth:
+   - Added fallback shim speaking-backend/scripts/build.mjs that forwards execution to root scripts/build.mjs if ever invoked from inside speaking-backend.
+3. Successfully committed and pushed to https://github.com/William-Rowan-Waltor/English-Lab.git.
+================================================================
