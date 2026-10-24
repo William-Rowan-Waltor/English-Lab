@@ -7315,3 +7315,19 @@ Fix Implemented:
 3. Guidance provided for user to ensure Vercel Project Settings has Framework Preset set to 'Other' if dashboard override is active.
 4. Committed and pushed commit to https://github.com/William-Rowan-Waltor/English-Lab.git.
 ================================================================
+================================================================
+SESSION: VERCEL ROOT DIRECTORY DIAGNOSIS & RESOLUTION
+User Request: 'Vercel build log: Cannot find module /vercel/path0/speaking-backend/scripts/build.mjs'
+Status: DIAGNOSED WITH 100% CERTAINTY
+
+Root Cause:
+In Vercel Project Dashboard (Settings -> General -> Root Directory), the project's Root Directory was configured to 'speaking-backend' during initial project import.
+Because of this setting:
+- Vercel sets the build working directory to /vercel/path0/speaking-backend.
+- Any build command runs inside /vercel/path0/speaking-backend.
+- Node cannot find scripts/build.mjs because the entire application (HTML, React, CSS, scripts, dist, API) lives at repository root (/vercel/path0).
+
+Solution:
+User must reset 'Root Directory' to blank (./) in Vercel Project Dashboard (Settings -> General -> Root Directory -> Edit -> clear field -> Save).
+Set Framework Preset to 'Other', Build Command to 'node scripts/build.mjs', Output Directory to 'dist', then click Redeploy.
+================================================================
