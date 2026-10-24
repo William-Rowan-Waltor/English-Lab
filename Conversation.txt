@@ -7258,3 +7258,28 @@ Actions Taken:
 5. Successfully pushed all code and historical data to origin/main.
 6. Ready for instant 1-click import into Vercel dashboard at https://vercel.com/new.
 ================================================================
+================================================================
+SESSION: VERCEL DEPLOYMENT ERROR FIX
+User Request: 'Dá»± Ã¡n bá»‹ lá»—i bá»‹ deploy lÃªn vercel'
+Status: FIXED & PUSHED TO MAIN
+
+Root Cause:
+1. 'outputDirectory: .' in vercel.json caused Vercel's build validator to reject with error ('outputDirectory cannot be project root .').
+2. 'version: 2' is deprecated in modern Vercel serverless platform.
+3. scripts/build.mjs previously only built dist/app.jsx and root index.html without copying styles.css, vendor/, data/, or generating dist/index.html for standalone production deployment.
+
+Fix Implemented:
+1. vercel.json:
+   - Removed deprecated 'version: 2'.
+   - Set outputDirectory to 'dist'.
+   - Configured functions.api/*.js to includeFiles 'data/**' for Serverless Dataset persistence.
+   - Preserved SPA rewrites while bypassing /api/*.
+2. scripts/build.mjs:
+   - Generates both root index.html (for local double-click / serve.mjs) and dist/index.html.
+   - Automatically copies styles.css, vendor/ assets, and data/ into dist/ upon every build.
+3. package.json:
+   - Added engines: { node: '>=18.0.0' } ensuring modern Node environment on Vercel.
+4. api/storage.js:
+   - Updated GitHub fallback repository to William-Rowan-Waltor/English-Lab.
+5. Pushed commit 1e12aa1 to https://github.com/William-Rowan-Waltor/English-Lab.git.
+================================================================
