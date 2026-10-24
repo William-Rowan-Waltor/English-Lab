@@ -1,0 +1,20 @@
+{
+  "name": "english-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unified English Mastery Lab: IELTS, THPTQG, and V-ACT Exam Preparation",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/serve.mjs",
+    "test": "node scripts/test-unified-mastery.mjs"
+  },
+  "keywords": [
+    "ielts",
+    "thptqg",
+    "vact",
+    "english",
+    "flashcards"
+  ],
+  "author": "William-Rowan-Waltor",
+  "license": "MIT"
+}

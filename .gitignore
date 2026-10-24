@@ -1,0 +1,42 @@
+# Private local data backups (allow primary data/app-state.json for Vercel deployment)
+data/*.backup*.json
+data/*.from-edge*.json
+data/*.tmp*
+
+# Python virtual environments & bytecode
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+*$py.class
+speaking-backend/.venv/
+speaking-backend/audio_cache/
+speaking-backend/data/speaking.db*
+speaking-backend/*.webm
+speaking-backend/*.wav
+speaking-backend/.env
+
+# Runtime logs / local temp output
+*.log
+*.err
+server.log
+server.err
+.edge-*/
+*.png
+!screenshots/
+!screenshots/*.png
+
+# Common local files
+node_modules/
+.DS_Store
+Thumbs.db
+# One-off local conversion helper
+scripts/regenerate-source-with-storage.mjs
+
+# In-project MarkItDown virtualenv (recreate with: node scripts/setup-markitdown.mjs)
+markitdown-venv/
+
+# Downloaded project-local AI runtime, models, generated Modelfile, PID, and logs
+.local/
+
+.vercel

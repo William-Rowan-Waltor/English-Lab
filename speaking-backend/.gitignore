@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+data/speaking.db
+data/speaking.db-journal
+audio_cache/*.webm
+audio_cache/*.wav
+audio_cache/*.mp3
+audio_cache/*.m4a
+metrics/

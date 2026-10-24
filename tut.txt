@@ -1,0 +1,85 @@
+================================================================================
+HƯỚNG DẪN KHỞI CHẠY & TRIỂN KHAI — UNIFIED ENGLISH MASTERY LAB
+(Hợp nhất IELTS Academic + Tiếng Anh THPT Quốc Gia + ĐGNL ĐHQG-HCM V-ACT)
+================================================================================
+
+1. KHỞI CHẠY CỤC BỘ (LOCAL SERVER)
+--------------------------------------------------------------------------------
+Bước 1: Build mã nguồn (tự động nén src/*.js và src/*.jsx vào dist/app.jsx & index.html):
+  cd /d D:\Downloads\English\ielts-writing-lab-v7-split
+  node scripts\build.mjs
+
+Bước 2: Chạy Local Web Server (hỗ trợ đồng bộ dữ liệu vào data/app-state.json):
+  node scripts\serve.mjs
+  -> Mở trình duyệt truy cập: http://localhost:3000 (hoặc mở trực tiếp index.html)
+
+Bước 3: Chạy Speaking Backend (nếu luyện phát âm / Speech-to-Text Whisper AI):
+  cd /d D:\Downloads\English\ielts-writing-lab-v7-split\speaking-backend
+  .\.venv\Scripts\python.exe -m uvicorn src.main:app --host 127.0.0.1 --port 8000
+
+
+2. ĐẨY LÊN GITHUB (GITHUB REPOSITORY)
+--------------------------------------------------------------------------------
+Repository GitHub: https://github.com/William-Rowan-Waltor/English-Lab.git
+Chế độ: Private / Public
+
+Lệnh đồng bộ lên GitHub:
+  cd /d D:\Downloads\English\ielts-writing-lab-v7-split
+  git add .
+  git commit -m "feat: unified english mastery lab (Vietnam Exams + IELTS)"
+  git push -u origin main
+
+
+3. TRIỂN KHAI VERCEL & LƯU TRỮ DATASET TRỰC TIẾP
+--------------------------------------------------------------------------------
+Dự án đã tích hợp sẵn:
+- File cấu hình: vercel.json
+- File quản lý gói: package.json (build script: node scripts/build.mjs)
+- Serverless Storage API: api/storage.js
+
+Cách 1: Triển khai 1-Click tự động qua GitHub:
+  1. Mở https://vercel.com/new
+  2. Chọn Import repository: William-Rowan-Waltor/English-Lab
+  3. Bấm "Deploy" (Vercel tự động build và cấp domain *.vercel.app miễn phí)
+
+Cơ chế lưu trữ Dataset Người dùng trên Vercel:
+- Tệp dữ liệu ban đầu: data/app-state.json (lịch sử làm bài, từ vựng custom, patches, roadmap).
+- Khi chạy trên Vercel, ứng dụng tự động nhận diện Cloud Host và kích hoạt Cloud Storage Sync.
+- Mọi thao tác học tập, thêm từ vựng, làm đề thi đều được lưu đồng thời vào:
+  (1) Trình duyệt (localStorage) để truy cập offline siêu tốc.
+  (2) Serverless Endpoint (/api/storage) để lưu trên Vercel.
+- Tuỳ chọn mở rộng: Bạn có thể thêm biến môi trường GITHUB_TOKEN (gho_...) trên Vercel Project Settings để Vercel tự động commit dữ liệu mới về thẳng repository GitHub của bạn!
+
+
+4. KẾT NỐI TRỰC TIẾP VỚI MODEL AI CỦA ANTIGRAVITY & OPENCODE (KHÔNG QUA VERCEL)
+--------------------------------------------------------------------------------
+Khi mở ứng dụng trực tiếp trên máy thông qua Local Server (http://localhost:5173 hoặc http://localhost:3000), bạn KHÔNG cần nhập API key hay phụ thuộc link Vercel cloud:
+
+A. Khởi chạy Local Server:
+  cd /d D:\Downloads\English\ielts-writing-lab-v7-split
+  node scripts\serve.mjs
+  -> Mở trình duyệt truy cập: http://localhost:5173
+
+B. Cơ chế kết nối Antigravity & OpenCode:
+  1. Antigravity CLI Bridge (/api/agy/chat):
+     - Tự động nhận diện công cụ Antigravity CLI (agy.exe) trong máy (%LOCALAPPDATA%\agy\bin\agy.exe).
+     - Kết nối trực tiếp các model đỉnh cao của Google DeepMind & Anthropic:
+       + gemini-3.8-flash-high (Siêu tốc độ, 1M context, hỗ trợ multimodal & chấm điểm thi IELTS/THPTQG xuất sắc).
+       + gemini-3.8-flash-medium / gemini-3.8-flash-low
+       + claude-sonnet-4-6 (Thinking) / claude-opus-4-6-thinking
+       + gpt-oss-120b-medium
+     - Dữ liệu gửi qua luồng stdin (không giới hạn độ dài đề thi hay bài luận).
+
+  2. OpenCode Engine Bridge (/api/opencode/chat):
+     - Tự động nhận diện công cụ OpenCode (%APPDATA%\npm\node_modules\opencode-ai\bin\opencode.exe) và chứng chỉ xác thực máy tại ~/.local/share/opencode/auth.json.
+     - Hỗ trợ các model miễn phí:
+       + recursive/flint-v1.0:free (Zero cost)
+       + opencode/glm-5.3-flash-free / opencode/deepseek-v4.1-flash-free / opencode/nemotron-3-ultra-free
+       + google/gemini-2.5-flash
+
+  3. Kích hoạt 1-Click trong Cài đặt (Settings):
+     - Vào tab "Cài đặt" (Settings).
+     - Thấy ngay bảng "⚡ Local Machine AI Engines (Zero API Key Needed)" với trạng thái "● Connected to Machine CLI".
+     - Bấm nút "🚀 1-Click Activate Antigravity" hoặc "🚀 1-Click Activate OpenCode".
+     - Hệ thống tự động test kết nối và set làm AI engine Active. Toàn bộ tính năng chấm bài Writing, gợi ý từ vựng, giải thích bài thi THPTQG/V-ACT sẽ chạy trực tiếp qua engine này!
+================================================================================
