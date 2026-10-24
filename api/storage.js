@@ -94,7 +94,7 @@ module.exports = async (req, res) => {
 
       // 3. Persist back to GitHub repository if GITHUB_TOKEN is available
       const ghToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-      const ghRepo = process.env.GITHUB_REPO || 'William-Rowan-Waltor/ielts-writing-lab-v7';
+      const ghRepo = process.env.GITHUB_REPO || 'William-Rowan-Waltor/English-Lab';
       if (ghToken && ghRepo) {
         try {
           // Get current file sha

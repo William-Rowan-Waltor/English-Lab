@@ -72,4 +72,28 @@ ${appSource.replaceAll('</script>', '<\\/script>')}
 `;
 
 fs.writeFileSync(indexFile, html, 'utf8');
-console.log(`Built ${path.relative(root, outFile)} and direct-open ${path.relative(root, indexFile)} from ${files.length} source files.`);
+
+const distIndexFile = path.join(distDir, 'index.html');
+fs.writeFileSync(distIndexFile, html, 'utf8');
+
+// Copy styles.css into dist for standalone static hosting
+const stylesSrc = path.join(root, 'styles.css');
+if (fs.existsSync(stylesSrc)) {
+  fs.copyFileSync(stylesSrc, path.join(distDir, 'styles.css'));
+}
+
+// Copy vendor directory into dist
+const vendorSrc = path.join(root, 'vendor');
+const vendorDest = path.join(distDir, 'vendor');
+if (fs.existsSync(vendorSrc)) {
+  fs.cpSync(vendorSrc, vendorDest, { recursive: true });
+}
+
+// Copy data directory into dist
+const dataSrc = path.join(root, 'data');
+const dataDest = path.join(distDir, 'data');
+if (fs.existsSync(dataSrc)) {
+  fs.cpSync(dataSrc, dataDest, { recursive: true });
+}
+
+console.log(`Built ${path.relative(root, outFile)}, root index.html, and standalone ${path.relative(root, distDir)} bundle from ${files.length} source files.`);

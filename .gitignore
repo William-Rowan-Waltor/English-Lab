@@ -40,3 +40,7 @@ markitdown-venv/
 .local/
 
 .vercel
+
+# Built dist copies generated during build
+dist/vendor/
+dist/data/

@@ -8,6 +8,9 @@
     "start": "node scripts/serve.mjs",
     "test": "node scripts/test-unified-mastery.mjs"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "keywords": [
     "ielts",
     "thptqg",
