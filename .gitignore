@@ -44,3 +44,5 @@ markitdown-venv/
 # Built dist copies generated during build
 dist/vendor/
 dist/data/
+speaking-backend/dist/vendor/
+speaking-backend/dist/data/

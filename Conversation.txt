@@ -7331,3 +7331,16 @@ Solution:
 User must reset 'Root Directory' to blank (./) in Vercel Project Dashboard (Settings -> General -> Root Directory -> Edit -> clear field -> Save).
 Set Framework Preset to 'Other', Build Command to 'node scripts/build.mjs', Output Directory to 'dist', then click Redeploy.
 ================================================================
+================================================================
+SESSION: UNIVERSAL DUAL-DIRECTORY VERCEL DEPLOYMENT RESOLUTION
+Status: FIXED & TESTED 100%
+
+Summary of Fix:
+Regardless of whether Vercel runs from the repository root (/) OR from the speaking-backend subfolder (/speaking-backend):
+1. Both locations now have scripts/build.mjs with automatic root discovery.
+2. Both locations now have package.json with 'build': 'node scripts/build.mjs' and modern Node engine.
+3. Both locations now have vercel.json with 'framework: null' (preventing FastAPI hijacking) and 'outputDirectory: dist'.
+4. Both locations now have api/storage.js for Serverless dataset persistence.
+5. Build script populates both root dist/ and speaking-backend/dist/ with index.html, app.jsx, styles.css, vendor/, and data/.
+6. .vercelignore no longer removes speaking-backend, ensuring all needed files are available to Vercel build container.
+================================================================

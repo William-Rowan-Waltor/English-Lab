@@ -7,9 +7,13 @@ venv/**
 markitdown-venv
 markitdown-venv/**
 **/markitdown-venv/**
-speaking-backend
-speaking-backend/**
-**/speaking-backend/**
+speaking-backend/.venv
+speaking-backend/.venv/**
+speaking-backend/audio_cache
+speaking-backend/audio_cache/**
+speaking-backend/data/speaking.db*
+speaking-backend/*.webm
+speaking-backend/*.wav
 local-ai
 local-ai/**
 node_modules

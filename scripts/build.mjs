@@ -2,13 +2,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const srcDir = path.join(root, 'src');
-const distDir = path.join(root, 'dist');
-const outFile = path.join(distDir, 'app.jsx');
-const indexFile = path.join(root, 'index.html');
+// Smart root discovery: check current dir, parent, grandparent for src/12-app.jsx
+let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+if (!fs.existsSync(path.join(root, 'src', '12-app.jsx'))) {
+  if (fs.existsSync(path.join(root, '..', 'src', '12-app.jsx'))) {
+    root = path.resolve(root, '..');
+  } else if (fs.existsSync(path.join(process.cwd(), 'src', '12-app.jsx'))) {
+    root = path.resolve(process.cwd());
+  } else if (fs.existsSync(path.join(process.cwd(), '..', 'src', '12-app.jsx'))) {
+    root = path.resolve(process.cwd(), '..');
+  }
+}
 
-fs.mkdirSync(distDir, { recursive: true });
+const srcDir = path.join(root, 'src');
 
 const jsFiles = fs
   .readdirSync(srcDir)
@@ -40,7 +46,6 @@ const body = files
   .join('\n');
 
 const appSource = `${banner}${body}`;
-fs.writeFileSync(outFile, appSource, 'utf8');
 
 const html = `<!DOCTYPE html>
 <html lang="en">
@@ -71,29 +76,43 @@ ${appSource.replaceAll('</script>', '<\\/script>')}
 </html>
 `;
 
-fs.writeFileSync(indexFile, html, 'utf8');
+// Target dist locations: root dist, speaking-backend dist, and cwd dist
+const targetDists = new Set([
+  path.join(root, 'dist'),
+  path.join(root, 'speaking-backend', 'dist'),
+  path.join(process.cwd(), 'dist'),
+]);
 
-const distIndexFile = path.join(distDir, 'index.html');
-fs.writeFileSync(distIndexFile, html, 'utf8');
-
-// Copy styles.css into dist for standalone static hosting
-const stylesSrc = path.join(root, 'styles.css');
-if (fs.existsSync(stylesSrc)) {
-  fs.copyFileSync(stylesSrc, path.join(distDir, 'styles.css'));
+// Write index.html to root and speaking-backend root
+fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
+const speakingBackendDir = path.join(root, 'speaking-backend');
+if (fs.existsSync(speakingBackendDir)) {
+  fs.writeFileSync(path.join(speakingBackendDir, 'index.html'), html, 'utf8');
 }
 
-// Copy vendor directory into dist
-const vendorSrc = path.join(root, 'vendor');
-const vendorDest = path.join(distDir, 'vendor');
-if (fs.existsSync(vendorSrc)) {
-  fs.cpSync(vendorSrc, vendorDest, { recursive: true });
+// Populate each dist directory
+for (const distDir of targetDists) {
+  fs.mkdirSync(distDir, { recursive: true });
+  fs.writeFileSync(path.join(distDir, 'app.jsx'), appSource, 'utf8');
+  fs.writeFileSync(path.join(distDir, 'index.html'), html, 'utf8');
+
+  // Copy styles.css
+  const stylesSrc = path.join(root, 'styles.css');
+  if (fs.existsSync(stylesSrc)) {
+    fs.copyFileSync(stylesSrc, path.join(distDir, 'styles.css'));
+  }
+
+  // Copy vendor/
+  const vendorSrc = path.join(root, 'vendor');
+  if (fs.existsSync(vendorSrc)) {
+    fs.cpSync(vendorSrc, path.join(distDir, 'vendor'), { recursive: true });
+  }
+
+  // Copy data/
+  const dataSrc = path.join(root, 'data');
+  if (fs.existsSync(dataSrc)) {
+    fs.cpSync(dataSrc, path.join(distDir, 'data'), { recursive: true });
+  }
 }
 
-// Copy data directory into dist
-const dataSrc = path.join(root, 'data');
-const dataDest = path.join(distDir, 'data');
-if (fs.existsSync(dataSrc)) {
-  fs.cpSync(dataSrc, dataDest, { recursive: true });
-}
-
-console.log(`Built ${path.relative(root, outFile)}, root index.html, and standalone ${path.relative(root, distDir)} bundle from ${files.length} source files.`);
+console.log(`Built app.jsx, index.html, and standalone bundles across ${targetDists.size} targets from ${files.length} source files.`);
