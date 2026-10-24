@@ -7299,3 +7299,19 @@ Fix Implemented:
    - Added fallback shim speaking-backend/scripts/build.mjs that forwards execution to root scripts/build.mjs if ever invoked from inside speaking-backend.
 3. Successfully committed and pushed to https://github.com/William-Rowan-Waltor/English-Lab.git.
 ================================================================
+================================================================
+SESSION: VERCEL FASTAPI FRAMEWORK PRESET OVERRIDE
+User Request: 'Vercel build log: [FASTAPI_ENTRYPOINT_NOT_FOUND] No FastAPI entrypoint found'
+Status: FIXED & PUSHED TO MAIN
+
+Root Cause:
+When user first imported the repository on Vercel, Vercel detected Python and set the project's 'Framework Preset' to 'FastAPI' in the Vercel Dashboard project configuration. Even though speaking-backend is ignored in .vercelignore, Vercel CLI executed the FastAPI builder by default.
+
+Fix Implemented:
+1. vercel.json:
+   - Added '"framework": null' to explicitly tell Vercel CLI to disable any framework preset (including FastAPI) and treat the deployment as a pure custom static/serverless application.
+2. package-lock.json:
+   - Aligned name to 'english-lab'.
+3. Guidance provided for user to ensure Vercel Project Settings has Framework Preset set to 'Other' if dashboard override is active.
+4. Committed and pushed commit to https://github.com/William-Rowan-Waltor/English-Lab.git.
+================================================================
