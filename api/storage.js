@@ -1,16 +1,36 @@
-// api/storage.js — Vercel Serverless Endpoint for User Dataset Persistence
+// api/storage.js — High-Performance Vercel Serverless Endpoint for User Dataset Persistence
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
+const crypto = require('crypto');
 
 const TMP_FILE = path.join('/tmp', 'app-state.json');
 const ROOT_FILE = path.join(process.cwd(), 'data', 'app-state.json');
+
+function sendOptimized(req, res, raw) {
+  const hash = crypto.createHash('md5').update(raw).digest('hex');
+  res.setHeader('ETag', `"${hash}"`);
+  if (req.headers['if-none-match'] === `"${hash}"`) {
+    return res.status(304).end();
+  }
+
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  if (acceptEncoding.includes('gzip')) {
+    const compressed = zlib.gzipSync(raw);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Encoding', 'gzip');
+    return res.status(200).send(compressed);
+  }
+
+  return res.status(200).setHeader('Content-Type', 'application/json; charset=utf-8').send(raw);
+}
 
 module.exports = async (req, res) => {
   // CORS & Cache control
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, If-None-Match');
+  res.setHeader('Cache-Control', 'private, no-cache');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -22,7 +42,7 @@ module.exports = async (req, res) => {
       // 1. Check warm container /tmp first (has latest writes)
       if (fs.existsSync(TMP_FILE)) {
         const raw = fs.readFileSync(TMP_FILE, 'utf8');
-        return res.status(200).setHeader('Content-Type', 'application/json').send(raw);
+        return sendOptimized(req, res, raw);
       }
 
       // 2. Check Vercel KV / Upstash if configured
@@ -33,8 +53,8 @@ module.exports = async (req, res) => {
           });
           const kvData = await kvRes.json();
           if (kvData && kvData.result) {
-            const parsed = typeof kvData.result === 'string' ? JSON.parse(kvData.result) : kvData.result;
-            return res.status(200).json(parsed);
+            const raw = typeof kvData.result === 'string' ? kvData.result : JSON.stringify(kvData.result);
+            return sendOptimized(req, res, raw);
           }
         } catch (kvErr) {
           console.warn('Vercel KV get error:', kvErr);
@@ -44,7 +64,7 @@ module.exports = async (req, res) => {
       // 3. Check bundled repo file data/app-state.json
       if (fs.existsSync(ROOT_FILE)) {
         const raw = fs.readFileSync(ROOT_FILE, 'utf8');
-        return res.status(200).setHeader('Content-Type', 'application/json').send(raw);
+        return sendOptimized(req, res, raw);
       }
 
       return res.status(200).json({ exists: false, path: 'data/app-state.json' });
@@ -97,47 +117,47 @@ module.exports = async (req, res) => {
       const ghRepo = process.env.GITHUB_REPO || 'William-Rowan-Waltor/English-Lab';
       if (ghToken && ghRepo) {
         try {
-          // Get current file sha
           const fileUrl = `https://api.github.com/repos/${ghRepo}/contents/data/app-state.json`;
           const getRes = await fetch(fileUrl, {
             headers: {
               Authorization: `Bearer ${ghToken}`,
-              'User-Agent': 'Vercel-Storage-Sync',
+              'User-Agent': 'English-Lab-Storage-Worker',
               Accept: 'application/vnd.github.v3+json'
             }
           });
           let sha = null;
           if (getRes.ok) {
-            const fileInfo = await getRes.json();
-            sha = fileInfo.sha;
+            const fileData = await getRes.json();
+            sha = fileData.sha;
           }
 
-          // Commit back to GitHub
           const contentBase64 = Buffer.from(jsonStr, 'utf8').toString('base64');
-          await fetch(fileUrl, {
+          const commitRes = await fetch(fileUrl, {
             method: 'PUT',
             headers: {
               Authorization: `Bearer ${ghToken}`,
-              'User-Agent': 'Vercel-Storage-Sync',
+              'User-Agent': 'English-Lab-Storage-Worker',
               'Content-Type': 'application/json',
               Accept: 'application/vnd.github.v3+json'
             },
             body: JSON.stringify({
-              message: `Sync user dataset: ${new Date().toISOString()}`,
+              message: `chore(data): auto-sync user state [skip ci]`,
               content: contentBase64,
-              sha: sha || undefined
+              sha: sha || undefined,
+              branch: 'main'
             })
           });
+
+          if (!commitRes.ok) {
+            const errBody = await commitRes.text();
+            console.warn('GitHub sync failed:', errBody);
+          }
         } catch (ghErr) {
-          console.warn('GitHub sync error:', ghErr);
+          console.warn('GitHub persist error:', ghErr);
         }
       }
 
-      return res.status(200).json({
-        success: true,
-        savedAt: payload.savedAt,
-        path: 'data/app-state.json'
-      });
+      return res.status(200).json({ ok: true, savedAt: payload.savedAt });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }

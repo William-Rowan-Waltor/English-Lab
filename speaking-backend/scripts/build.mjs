@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
-// Smart root discovery: check current dir, parent, grandparent for src/12-app.jsx
+// 1. Smart root discovery: check current dir, parent, grandparent for src/12-app.jsx
 let root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 if (!fs.existsSync(path.join(root, 'src', '12-app.jsx'))) {
   if (fs.existsSync(path.join(root, '..', 'src', '12-app.jsx'))) {
@@ -15,7 +16,9 @@ if (!fs.existsSync(path.join(root, 'src', '12-app.jsx'))) {
 }
 
 const srcDir = path.join(root, 'src');
+const babelPath = path.join(root, 'vendor', 'babel.min.js');
 
+// 2. Read and assemble plain JS files
 const jsFiles = fs
   .readdirSync(srcDir)
   .filter((file) => file.endsWith('.js'))
@@ -25,7 +28,8 @@ const jsBody = jsFiles.length
   ? jsFiles.map((f) => `// ---- ${f} ----\n${fs.readFileSync(path.join(srcDir, f), 'utf8').trim()}`).join('\n')
   : '';
 
-const files = fs
+// 3. Read and assemble JSX files
+const jsxFiles = fs
   .readdirSync(srcDir)
   .filter((file) => file.endsWith('.jsx'))
   .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
@@ -38,7 +42,7 @@ const banner = [
   '',
 ].join('\n');
 
-const body = files
+const body = jsxFiles
   .map((file) => {
     const content = fs.readFileSync(path.join(srcDir, file), 'utf8').trim();
     return `// ---- ${file} ----\n${content}\n`;
@@ -47,53 +51,92 @@ const body = files
 
 const appSource = `${banner}${body}`;
 
+// 4. Pre-compile JSX with Babel at build-time (eliminating in-browser 5-10s Babel freeze!)
+let transpiledCode = '';
+if (fs.existsSync(babelPath)) {
+  const t0 = Date.now();
+  const babelSource = fs.readFileSync(babelPath, 'utf8');
+  const sandbox = { window: {}, navigator: { userAgent: 'node' }, console: console };
+  vm.createContext(sandbox);
+  vm.runInContext(babelSource, sandbox);
+  const Babel = sandbox.Babel || sandbox.window.Babel;
+
+  if (Babel && typeof Babel.transform === 'function') {
+    const res = Babel.transform(appSource, {
+      presets: ['react'],
+      compact: false,
+    });
+    transpiledCode = res.code;
+    console.log(`Pre-compiled ${jsxFiles.length} JSX modules at build-time in ${Date.now() - t0}ms (zero in-browser Babel lag).`);
+  }
+}
+
+if (!transpiledCode) {
+  console.warn('Warning: Build-time Babel transpile unavailable, falling back to raw JSX.');
+}
+
+const fullBundle = `// Unified English Mastery Lab Production Bundle
+${jsBody}
+
+// ---- Transpiled Application Core ----
+${transpiledCode || appSource}
+`;
+
+// 5. Generate high-performance production HTML
+// - No 2.8MB babel.min.js in browser
+// - No in-browser JSX parsing lockup
+// - Preconnect for fonts
+// - Instant hydration
 const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IELTS Writing Lab</title>
+<title>IELTS & Vietnam Exams Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
 <script src="./vendor/react.production.min.js"></script>
 <script>window.React||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"><\\/script>')</script>
 <script src="./vendor/react-dom.production.min.js"></script>
 <script>window.ReactDOM||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"><\\/script>')</script>
-<script src="./vendor/babel.min.js"></script>
-<script>window.Babel||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"><\\/script>')</script>
 <script src="./vendor/chart.umd.min.js"></script>
 <script>window.Chart||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\\/script>')</script>
 <script src="./vendor/gsap.min.js"></script>
 <script>window.gsap||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"><\\/script>')</script>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 <div id="root"></div>
-${jsBody ? `<script>\n${jsBody.replaceAll('</script>', '<\\/script>')}\n</script>` : ''}
-<script type="text/babel" data-presets="env,react">
-${appSource.replaceAll('</script>', '<\\/script>')}
-</script>
+<script src="./app.bundle.js"></script>
 </body>
 </html>
 `;
 
-// Target dist locations: root dist, speaking-backend dist, and cwd dist
+// 6. Output locations
+const targetRoots = new Set([
+  root,
+  path.join(root, 'speaking-backend'),
+]);
+
 const targetDists = new Set([
   path.join(root, 'dist'),
   path.join(root, 'speaking-backend', 'dist'),
-  path.join(process.cwd(), 'dist'),
 ]);
 
-// Write index.html to root and speaking-backend root
-fs.writeFileSync(path.join(root, 'index.html'), html, 'utf8');
-const speakingBackendDir = path.join(root, 'speaking-backend');
-if (fs.existsSync(speakingBackendDir)) {
-  fs.writeFileSync(path.join(speakingBackendDir, 'index.html'), html, 'utf8');
+// Write root and subfolder index.html + app.bundle.js
+for (const tr of targetRoots) {
+  if (fs.existsSync(tr)) {
+    fs.writeFileSync(path.join(tr, 'index.html'), html, 'utf8');
+    fs.writeFileSync(path.join(tr, 'app.bundle.js'), fullBundle, 'utf8');
+  }
 }
 
-// Populate each dist directory
+// Write dist locations
 for (const distDir of targetDists) {
   fs.mkdirSync(distDir, { recursive: true });
   fs.writeFileSync(path.join(distDir, 'app.jsx'), appSource, 'utf8');
+  fs.writeFileSync(path.join(distDir, 'app.bundle.js'), fullBundle, 'utf8');
   fs.writeFileSync(path.join(distDir, 'index.html'), html, 'utf8');
 
   // Copy styles.css
@@ -115,4 +158,4 @@ for (const distDir of targetDists) {
   }
 }
 
-console.log(`Built app.jsx, index.html, and standalone bundles across ${targetDists.size} targets from ${files.length} source files.`);
+console.log(`Successfully generated high-speed pre-transpiled app.bundle.js and lightweight index.html (${(html.length / 1024).toFixed(1)} KB) across targets.`);

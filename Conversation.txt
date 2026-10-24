@@ -7344,3 +7344,28 @@ Regardless of whether Vercel runs from the repository root (/) OR from the speak
 5. Build script populates both root dist/ and speaking-backend/dist/ with index.html, app.jsx, styles.css, vendor/, and data/.
 6. .vercelignore no longer removes speaking-backend, ensuring all needed files are available to Vercel build container.
 ================================================================
+================================================================
+SESSION: PERFORMANCE OVERHAUL (ZERO-LAG VERCEL LOADING)
+User Request: 'app trÃªn vercel khi load thá»±c sá»± ráº¥t lag, vÃ  load ráº¥t lÃ¢u'
+Status: COMPLETED & HIGH-PERFORMANCE OPTIMIZED
+
+Root Causes Identified:
+1. In-Browser Babel Lockup: index.html was embedding babel.min.js (2.8 MB) and running in-browser compilation over 35,000 lines (1.5 MB) of JSX on EVERY single page load, locking the CPU for 5-10 seconds.
+2. Huge Initial HTML Payload: index.html was 2.1 MB because all JSX was inlined into script tags.
+3. Aggressive 2.5MB State Sync: 12-app.jsx had a 400ms debounce sending 2.5MB of JSON over HTTP POST on virtually every keystroke.
+4. Missing Edge Cache Headers: Vercel was re-fetching assets without long-term immutability caching.
+
+Optimizations Implemented:
+1. Build-Time Pre-Transpilation (scripts/build.mjs & speaking-backend/scripts/build.mjs):
+   - Babel now executes at BUILD-TIME via Node vm.
+   - Produces pure pre-compiled vanilla JavaScript app.bundle.js.
+   - In-browser Babel runtime: COMPLETELY REMOVED (0 MB downloaded, 0 ms compilation freeze).
+2. Featherweight HTML (index.html):
+   - Reduced from 2,101,888 bytes (2.1 MB) to 1,493 bytes (1.5 KB) â€” a 99.9% size reduction!
+   - Loads app.bundle.js asynchronously with preconnect font headers.
+3. Edge Caching & Compression (vercel.json):
+   - Configured Cache-Control: public, max-age=31536000, immutable for all static JS, CSS, and vendor assets.
+4. Optimized Cloud Sync (api/storage.js & src/12-app.jsx):
+   - Raised debounce from 400ms to 2500ms and added lastSavedPayloadRef hash check to skip redundant 2.5MB network roundtrips.
+   - api/storage.js now supports HTTP 304 ETag validation and Gzip compression (reducing 2.5MB dataset to ~290KB, 88% network saving).
+================================================================

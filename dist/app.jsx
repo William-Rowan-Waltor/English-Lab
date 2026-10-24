@@ -23349,13 +23349,18 @@ function App() {
     return ()=>{ document.removeEventListener("ielts-open-vocab", onOpen); document.removeEventListener("ielts-import-vocab", onImport); };
   },[]);
 
+  const lastSavedPayloadRef = useRef("");
   useEffect(()=>{
     if (!canUseFolderStorage() || !folderStorageLoadedRef.current) return;
     const id = setTimeout(()=>{
-      saveFolderStorage(makeStorageBundle(state,configs,activeId))
+      const bundle = makeStorageBundle(state,configs,activeId);
+      const str = JSON.stringify({ state, configs, activeId });
+      if (str === lastSavedPayloadRef.current) return; // Skip redundant network payloads
+      lastSavedPayloadRef.current = str;
+      saveFolderStorage(bundle)
         .then(()=>setFolderStorage(s=>({...s,enabled:true,ready:true,status:`Saved ${STORAGE_FILE_LABEL} ${new Date().toLocaleTimeString()}`})))
         .catch(e=>setFolderStorage(s=>({...s,enabled:true,ready:false,status:`Folder sync error: ${e.message}`})));
-    },400);
+    }, 2500);
     return ()=>clearTimeout(id);
   },[state,configs,activeId]);
 
